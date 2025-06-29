@@ -1,69 +1,7 @@
 import { Product } from '@/types/product';
 
 export const PRODUCTS: Product[] = [
-  {
-    id: 1,
-    name: "Lip Gloss Shine+",
-    description: "Hidratação intensa com brilho radiante.",
-    price: "R$ 39,90",
-    image: "/icons/download.jpg",
-    category: "lips",
-    inStock: true,
-  },
-  {
-    id: 2,
-    name: "Base HD Skin",
-    description: "Cobertura leve com efeito natural.",
-    price: "R$ 89,90",
-    image: "/icons/img1.jpeg",
-    category: "face",
-    inStock: true,
-  },
-  {
-    id: 3,
-    name: "Paleta Sunset Eyes",
-    description: "12 cores vibrantes inspiradas no pôr do sol.",
-    price: "R$ 129,90",
-    image: "/icons/img2.jpeg",
-    category: "eyes",
-    inStock: true,
-  },
-  {
-    id: 4,
-    name: "Máscara de Cílios Volume+",
-    description: "Volume e alongamento intensos para cílios deslumbrantes.",
-    price: "R$ 59,90",
-    image: "/icons/img3.jpeg",
-    category: "eyes",
-    inStock: true,
-  },
-  {
-    id: 5,
-    name: "Batom Matte Longa Duração",
-    description: "Cor intensa que dura até 8 horas sem manchar.",
-    price: "R$ 79,90",
-    image: "/icons/Card.svg",
-    category: "lips",
-    inStock: true,
-  },
-  {
-    id: 6,
-    name: "Corretivo Camuflagem Pro",
-    description: "Cobertura profissional para imperfeições.",
-    price: "R$ 45,90",
-    image: "/icons/Card.svg",
-    category: "face",
-    inStock: true,
-  },
-  {
-    id: 7,
-    name: "Hidratante Facial 24h",
-    description: "Hidratação profunda que dura 24 horas com vitamina C.",
-    price: "R$ 69,90",
-    image: "/icons/Card.svg",
-    category: "skincare",
-    inStock: true,
-  },
+  
 ];
 
 export const CATEGORIES = [
