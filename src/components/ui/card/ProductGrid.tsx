@@ -1,27 +1,49 @@
 "use client";
 
-import { ProductGridProps } from "@/types/product";
+import { motion } from "framer-motion";
 import { ProductCard } from "./ProductCard";
+import { Product } from "@/types/product";
+
+interface ProductGridProps {
+  products: Product[];
+}
 
 export const ProductGrid = ({ products }: ProductGridProps) => {
   if (products.length === 0) {
     return (
-      <div className="text-center py-8 sm:py-12 px-4">
-        <p className="text-pink-600 text-base sm:text-lg">
+      <motion.div
+        className="text-center py-12 px-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="text-pink-600 text-lg font-medium">
           Nenhum produto encontrado.
+        </div>
+        <p className="text-pink-500 text-sm mt-2">
+          Tente ajustar os filtros de busca.
         </p>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 max-w-7xl mx-auto px-4 pb-8 sm:pb-12">
-      {products.map((product) => (
-        <ProductCard
+    <motion.div
+      className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6 px-4 max-w-7xl mx-auto pb-8"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      {products.map((product, index) => (
+        <motion.div
           key={product.id}
-          product={product}
-        />
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: index * 0.1 }}
+        >
+          <ProductCard product={product} />
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 }; 
