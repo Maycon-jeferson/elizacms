@@ -90,7 +90,10 @@ export const AddProductModal = ({ isOpen, onClose, onAddProduct }: AddProductMod
     setErrors({});
     
     try {
-      await onAddProduct(formData);
+      await onAddProduct({
+        ...formData,
+        price: Number(formData.price),
+      });
       // Limpar formulário após sucesso
       setFormData({
         name: "",

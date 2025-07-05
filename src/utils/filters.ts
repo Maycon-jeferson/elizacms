@@ -21,9 +21,7 @@ export const sortProducts = (products: Product[], sortBy: 'name' | 'price' | 'ra
       case 'name':
         return a.name.localeCompare(b.name);
       case 'price':
-        const priceA = parseFloat(a.price.replace('R$ ', '').replace(',', '.'));
-        const priceB = parseFloat(b.price.replace('R$ ', '').replace(',', '.'));
-        return priceA - priceB;
+        return a.price - b.price;
       case 'rating':
         return (b.rating || 0) - (a.rating || 0);
       default:
