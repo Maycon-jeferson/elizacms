@@ -1,20 +1,14 @@
-// Navbar
+// Layout
+export { Header } from '../layout/Header';
 export { Navbar } from './navbar/Navbar';
 
-// Input components
+// UI Components
+export { Button } from './button/Button';
+export { FormInput } from './input/FormInput';
 export { SearchInput } from './input/SearchInput';
 export { FilterControls } from './input/FilterControls';
-export { FormInput } from './input/FormInput';
-
-// Card components
 export { ProductCard } from './card/ProductCard';
 export { ProductGrid } from './card/ProductGrid';
-
-// Button components
-export { Button } from './button/Button';
-
-// Auth components
+export { AddProductModal } from './admin/AddProductModal';
 export { LoginModal } from './auth/LoginModal';
-
-// Admin components
-export { AddProductModal } from './admin/AddProductModal'; 
+export { ErrorState } from './ErrorState'; 

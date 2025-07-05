@@ -7,7 +7,7 @@ import { LoginModal } from "../auth/LoginModal";
 import { AddProductModal } from "../admin/AddProductModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useProducts } from "@/hooks/useProducts";
-import { Product } from "@/types/product";
+import { CreateProductData } from "@/types/product";
 
 interface NavbarProps {
   title?: string;
@@ -42,7 +42,7 @@ export const Navbar = ({
     logout();
   };
 
-  const handleAddProduct = async (productData: Omit<Product, 'id'>) => {
+  const handleAddProduct = async (productData: CreateProductData) => {
     try {
       await addProduct(productData);
       setIsAddProductModalOpen(false);

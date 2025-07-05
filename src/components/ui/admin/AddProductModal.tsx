@@ -1,28 +1,29 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { useState, useRef, useEffect } from "react";
-import { Button } from "../button/Button";
-import { FormInput } from "../input/FormInput";
+import React, { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FormInput } from '@/components/ui/input/FormInput';
 import { CATEGORIES } from "@/constants/products";
-import { Product } from "@/types/product";
+import { CreateProductData } from '@/types/product';
 
 interface AddProductModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAddProduct: (product: Omit<Product, 'id'>) => Promise<void>;
+  onAddProduct: (product: CreateProductData) => Promise<void>;
 }
 
 export const AddProductModal = ({ isOpen, onClose, onAddProduct }: AddProductModalProps) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CreateProductData>({
     name: "",
     description: "",
-    price: "",
+    price: 0,
     image: "",
     category: "face",
     inStock: true,
+    stock: 0,
+    rating: 0,
   });
-  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -49,10 +50,10 @@ export const AddProductModal = ({ isOpen, onClose, onAddProduct }: AddProductMod
   };
 
   const validateForm = () => {
-    const newErrors: { [key: string]: string } = {};
+    const newErrors: Record<string, string> = {};
 
     if (!formData.name.trim()) {
-      newErrors.name = "Nome do produto é obrigatório";
+      newErrors.name = "Nome é obrigatório";
     }
 
     if (!formData.description.trim()) {
@@ -61,10 +62,8 @@ export const AddProductModal = ({ isOpen, onClose, onAddProduct }: AddProductMod
       newErrors.description = "Descrição deve ter pelo menos 10 caracteres";
     }
 
-    if (!formData.price.trim()) {
-      newErrors.price = "Preço é obrigatório";
-    } else if (!/^R\$ \d+,\d{2}$/.test(formData.price)) {
-      newErrors.price = "Preço deve estar no formato R$ XX,XX";
+    if (formData.price <= 0) {
+      newErrors.price = "Preço deve ser maior que zero";
     }
 
     if (!formData.image.trim()) {
@@ -90,18 +89,17 @@ export const AddProductModal = ({ isOpen, onClose, onAddProduct }: AddProductMod
     setErrors({});
     
     try {
-      await onAddProduct({
-        ...formData,
-        price: Number(formData.price),
-      });
+      await onAddProduct(formData);
       // Limpar formulário após sucesso
       setFormData({
         name: "",
         description: "",
-        price: "",
+        price: 0,
         image: "",
         category: "face",
         inStock: true,
+        stock: 0,
+        rating: 0,
       });
       setErrors({});
     } catch (error) {
@@ -112,7 +110,7 @@ export const AddProductModal = ({ isOpen, onClose, onAddProduct }: AddProductMod
     }
   };
 
-  const handleInputChange = (field: string, value: string | boolean) => {
+  const handleInputChange = (field: string, value: string | boolean | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Limpar erro do campo quando o usuário começar a digitar
     if (errors[field]) {
@@ -200,10 +198,10 @@ export const AddProductModal = ({ isOpen, onClose, onAddProduct }: AddProductMod
 
                 <FormInput
                   label="Preço"
-                  type="text"
+                  type="number"
                   value={formData.price}
-                  onChange={(e) => handleInputChange("price", e.target.value)}
-                  placeholder="R$ 39,90"
+                  onChange={(e) => handleInputChange("price", Number(e.target.value))}
+                  placeholder="39.90"
                   error={errors.price}
                   icon={
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -281,47 +279,93 @@ export const AddProductModal = ({ isOpen, onClose, onAddProduct }: AddProductMod
                       <input
                         type="radio"
                         name="inStock"
-                        checked={formData.inStock === true}
+                        checked={formData.inStock}
                         onChange={() => handleInputChange("inStock", true)}
                         className="mr-2 text-pink-600 focus:ring-pink-500"
                         disabled={isLoading}
                       />
-                      Em estoque
+                      Em Estoque
                     </label>
                     <label className="flex items-center text-sm text-pink-600 cursor-pointer">
                       <input
                         type="radio"
                         name="inStock"
-                        checked={formData.inStock === false}
+                        checked={!formData.inStock}
                         onChange={() => handleInputChange("inStock", false)}
                         className="mr-2 text-pink-600 focus:ring-pink-500"
                         disabled={isLoading}
                       />
-                      Fora de estoque
+                      Sem Estoque
                     </label>
                   </div>
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Quantidade em Estoque */}
+                <FormInput
+                  label="Quantidade em Estoque"
+                  type="number"
+                  value={formData.stock}
+                  onChange={(e) => handleInputChange("stock", Number(e.target.value))}
+                  placeholder="0"
+                  error={errors.stock}
+                  icon={
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    </svg>
+                  }
+                  disabled={isLoading}
+                />
+
+                {/* Rating */}
+                <FormInput
+                  label="Avaliação (0-5)"
+                  type="number"
+                  value={formData.rating}
+                  onChange={(e) => handleInputChange("rating", Number(e.target.value))}
+                  placeholder="4.5"
+                  error={errors.rating}
+                  icon={
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                    </svg>
+                  }
+                  disabled={isLoading}
+                />
+              </div>
+
               {/* Botões */}
-              <div className="flex space-x-3 pt-4">
-                <Button
+              <div className="flex justify-end space-x-3 pt-4">
+                <motion.button
                   type="button"
-                  variant="outline"
-                  className="flex-1"
                   onClick={onClose}
+                  className="px-6 py-2 text-sm font-medium text-pink-600 bg-white border border-pink-200 rounded-lg hover:bg-pink-50 transition-colors"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   disabled={isLoading}
                 >
                   Cancelar
-                </Button>
-                <Button
+                </motion.button>
+                <motion.button
                   type="submit"
-                  className="flex-1"
-                  loading={isLoading}
+                  className="px-6 py-2 text-sm font-medium text-white bg-pink-600 rounded-lg hover:bg-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
                   disabled={isLoading}
                 >
-                  {isLoading ? "Adicionando..." : "Adicionar Produto"}
-                </Button>
+                  {isLoading ? (
+                    <div className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Adicionando...
+                    </div>
+                  ) : (
+                    'Adicionar Produto'
+                  )}
+                </motion.button>
               </div>
             </form>
           </motion.div>

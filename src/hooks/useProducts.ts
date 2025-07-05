@@ -1,101 +1,194 @@
-import { useState, useMemo, useEffect } from 'react';
-import { filterProductsByName, filterProductsByCategory, sortProducts } from '@/utils/filters';
-import { Product } from '@/types/product';
+import { useState, useEffect, useCallback } from 'react';
+import { Product, CreateProductData } from '@/types/product';
 import { productsService } from '@/services/products';
+
+const LOADING_TIMEOUT = 10000; // 10 segundos de timeout
 
 export const useProducts = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [sortBy, setSortBy] = useState<'name' | 'price' | 'rating'>('name');
+  const [timeoutError, setTimeoutError] = useState(false);
 
-  // Carregar produtos do Supabase
+  // Função para criar timeout
+  const createTimeout = (timeoutMs: number): Promise<never> => {
+    return new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error('Timeout: Carregamento demorou muito tempo'));
+      }, timeoutMs);
+    });
+  };
+
+  // Função para carregar produtos com timeout
+  const loadProductsWithTimeout = useCallback(async (timeoutMs: number = LOADING_TIMEOUT) => {
+    try {
+      setLoading(true);
+      setError(null);
+      setTimeoutError(false);
+      
+      // Criar promise com timeout
+      const timeoutPromise = createTimeout(timeoutMs);
+      const dataPromise = productsService.getAllProducts();
+      
+      // Competição entre timeout e carregamento
+      const data = await Promise.race([dataPromise, timeoutPromise]);
+      setProducts(data);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar produtos';
+      setError(errorMessage);
+      
+      // Verificar se é erro de timeout
+      if (errorMessage.includes('Timeout')) {
+        setTimeoutError(true);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Carregar todos os produtos
+  const loadProducts = useCallback(async () => {
+    await loadProductsWithTimeout();
+  }, [loadProductsWithTimeout]);
+
+  // Carregar produtos por categoria
+  const loadProductsByCategory = useCallback(async (category: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      setTimeoutError(false);
+      
+      const timeoutPromise = createTimeout(LOADING_TIMEOUT);
+      const dataPromise = productsService.getProductsByCategory(category);
+      
+      const data = await Promise.race([dataPromise, timeoutPromise]);
+      setProducts(data);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar produtos';
+      setError(errorMessage);
+      
+      if (errorMessage.includes('Timeout')) {
+        setTimeoutError(true);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Buscar produtos
+  const searchProducts = useCallback(async (searchTerm: string) => {
+    try {
+      setLoading(true);
+      setError(null);
+      setTimeoutError(false);
+      
+      const timeoutPromise = createTimeout(LOADING_TIMEOUT);
+      const dataPromise = productsService.searchProducts(searchTerm);
+      
+      const data = await Promise.race([dataPromise, timeoutPromise]);
+      setProducts(data);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao buscar produtos';
+      setError(errorMessage);
+      
+      if (errorMessage.includes('Timeout')) {
+        setTimeoutError(true);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Função de retry
+  const retryLoad = useCallback(async () => {
+    await loadProductsWithTimeout();
+  }, [loadProductsWithTimeout]);
+
+  // Adicionar produto
+  const addProduct = useCallback(async (productData: CreateProductData) => {
+    try {
+      setError(null);
+      const newProduct = await productsService.createProduct(productData);
+      if (newProduct) {
+        setProducts(prev => [newProduct, ...prev]);
+      }
+      return newProduct;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao adicionar produto');
+      throw err;
+    }
+  }, []);
+
+  // Atualizar produto
+  const updateProduct = useCallback(async (id: number, productData: Partial<CreateProductData>) => {
+    try {
+      setError(null);
+      const updatedProduct = await productsService.updateProduct(id, productData);
+      if (updatedProduct) {
+        setProducts(prev => 
+          prev.map(product => 
+            product.id === id ? updatedProduct : product
+          )
+        );
+      }
+      return updatedProduct;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao atualizar produto');
+      throw err;
+    }
+  }, []);
+
+  // Deletar produto
+  const deleteProduct = useCallback(async (id: number) => {
+    try {
+      setError(null);
+      await productsService.deleteProduct(id);
+      setProducts(prev => prev.filter(product => product.id !== id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao deletar produto');
+      throw err;
+    }
+  }, []);
+
+  // Carregar produtos na inicialização - sem dependências para evitar loops
   useEffect(() => {
-    const loadProducts = async () => {
+    const initializeProducts = async () => {
       try {
-        setIsLoading(true);
+        setLoading(true);
         setError(null);
-        const data = await productsService.getAllProducts();
+        setTimeoutError(false);
+        
+        const timeoutPromise = createTimeout(LOADING_TIMEOUT);
+        const dataPromise = productsService.getAllProducts();
+        
+        const data = await Promise.race([dataPromise, timeoutPromise]);
         setProducts(data);
       } catch (err) {
-        console.error('Erro ao carregar produtos:', err);
-        setError('Falha ao carregar produtos');
-        // Fallback para produtos estáticos em caso de erro
-        setProducts([]);
+        const errorMessage = err instanceof Error ? err.message : 'Erro ao carregar produtos';
+        setError(errorMessage);
+        
+        if (errorMessage.includes('Timeout')) {
+          setTimeoutError(true);
+        }
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
     };
 
-    loadProducts();
-  }, []);
-
-  const filteredAndSortedProducts = useMemo(() => {
-    let filtered = products;
-    
-    // Filtrar por nome
-    filtered = filterProductsByName(filtered, searchTerm);
-    
-    // Filtrar por categoria
-    filtered = filterProductsByCategory(filtered, selectedCategory);
-    
-    // Ordenar
-    filtered = sortProducts(filtered, sortBy);
-    
-    return filtered;
-  }, [products, searchTerm, selectedCategory, sortBy]);
-
-  const addProduct = async (newProduct: Omit<Product, 'id'>) => {
-    try {
-      const addedProduct = await productsService.addProduct(newProduct);
-      setProducts(prev => [...prev, addedProduct]);
-      return addedProduct;
-    } catch (err) {
-      console.error('Erro ao adicionar produto:', err);
-      throw new Error('Falha ao adicionar produto');
-    }
-  };
-
-  const removeProduct = async (productId: number) => {
-    try {
-      await productsService.deleteProduct(productId);
-      setProducts(prev => prev.filter(p => p.id !== productId));
-    } catch (err) {
-      console.error('Erro ao remover produto:', err);
-      throw new Error('Falha ao remover produto');
-    }
-  };
-
-  const updateProduct = async (productId: number, updates: Partial<Product>) => {
-    try {
-      const updatedProduct = await productsService.updateProduct(productId, updates);
-      setProducts(prev => prev.map(p => 
-        p.id === productId ? updatedProduct : p
-      ));
-      return updatedProduct;
-    } catch (err) {
-      console.error('Erro ao atualizar produto:', err);
-      throw new Error('Falha ao atualizar produto');
-    }
-  };
+    initializeProducts();
+  }, []); // Array vazio para executar apenas uma vez
 
   return {
-    products: filteredAndSortedProducts,
-    allProducts: products,
-    isLoading,
+    products,
+    loading,
     error,
-    searchTerm,
-    setSearchTerm,
-    selectedCategory,
-    setSelectedCategory,
-    sortBy,
-    setSortBy,
-    totalProducts: products.length,
-    filteredCount: filteredAndSortedProducts.length,
+    timeoutError,
+    loadProducts,
+    loadProductsByCategory,
+    searchProducts,
     addProduct,
-    removeProduct,
     updateProduct,
+    deleteProduct,
+    retryLoad,
   };
 }; 

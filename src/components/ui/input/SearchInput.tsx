@@ -1,20 +1,47 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { useState, useEffect, useCallback } from "react";
 
 interface SearchInputProps {
   value: string;
   onChange: (value: string) => void;
+  onSearch?: (term: string) => void;
   placeholder?: string;
   className?: string;
+  debounceMs?: number;
 }
 
 export const SearchInput = ({ 
   value, 
   onChange, 
+  onSearch,
   placeholder = "Buscar produto...",
-  className = ""
+  className = "",
+  debounceMs = 500
 }: SearchInputProps) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  // Debounce effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, debounceMs);
+
+    return () => clearTimeout(timer);
+  }, [value, debounceMs]);
+
+  // Trigger search when debounced value changes
+  useEffect(() => {
+    if (onSearch && debouncedValue !== value) {
+      onSearch(debouncedValue);
+    }
+  }, [debouncedValue, onSearch, value]);
+
+  const handleChange = useCallback((newValue: string) => {
+    onChange(newValue);
+  }, [onChange]);
+
   return (
     <motion.div 
       className={`flex justify-center mb-6 sm:mb-8 px-4 ${className}`}
@@ -42,7 +69,7 @@ export const SearchInput = ({
           type="text"
           placeholder={placeholder}
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => handleChange(e.target.value)}
           className="w-full h-full pl-12 pr-4 rounded-md bg-white text-pink-800 placeholder-pink-400 focus:outline-none focus:ring-2 focus:ring-pink-300 transition-all border border-pink-200 shadow-sm text-sm sm:text-base"
         />
       </div>
